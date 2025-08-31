@@ -34,7 +34,7 @@ class NLPProcessor:
 
     def _download_nltk(self):
         """Download mínimo do NLTK"""
-        resources = ['punkt', 'stopwords', 'wordnet', 'averaged_perceptron_tagger', 
+        resources = ['punkt', 'punkt_tab', 'stopwords', 'wordnet', 'averaged_perceptron_tagger', 
                     'maxent_ne_chunker', 'words', 'omw-1.4']
         
         for resource in resources:
