@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Classificação Inteligente de Emails</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#10b981',
+                        accent: '#f59e0b'
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="font-inter bg-gradient-to-br from-blue-600 to-purple-700 min-h-screen text-gray-900 dark:text-gray-100 transition-colors duration-300">
+    <!-- Theme Toggle -->
+    <div class="fixed top-5 right-5 z-50">
+        <div id="themeToggle" class="flex items-center gap-3 bg-white dark:bg-gray-800 px-4 py-3 rounded-full border-2 border-gray-200 dark:border-gray-600 shadow-lg cursor-pointer hover:-translate-y-1 transition-all duration-300 backdrop-blur-sm">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Tema</span>
+            <div class="relative w-12 h-6 bg-gray-300 dark:bg-primary rounded-full transition-colors duration-300">
+                <div class="theme-toggle-slider absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-300 flex items-center justify-center shadow-sm">
+                    <i class="theme-toggle-icon fas fa-moon text-xs text-gray-600"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto p-5 min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-white dark:bg-gray-800 rounded-2xl p-8 mb-8 shadow-2xl border border-gray-200 dark:border-gray-700">
+            <div class="text-center mb-5">
+                <div class="flex items-center justify-center gap-4 mb-3">
+                    <i class="fas fa-robot text-4xl bg-gradient-to-r from-primary to-blue-800 bg-clip-text text-transparent"></i>
+                    <h1 class="text-4xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3">
+                        EmailClassifier
+                        <span class="bg-gradient-to-r from-accent to-orange-600 text-white px-3 py-1 rounded-xl text-base font-semibold animate-pulse">AI</span>
+                    </h1>
+                </div>
+                <p class="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">Sistema Inteligente de Classificação e Resposta Automática de Emails</p>
+            </div>
+            <div class="flex justify-center gap-8 flex-wrap">
+                <div class="flex items-center gap-4 bg-gray-50 dark:bg-gray-700 px-6 py-4 rounded-xl border border-gray-200 dark:border-gray-600">
+                    <i class="fas fa-chart-line text-2xl text-primary"></i>
+                    <div class="flex flex-col">
+                        <span id="processed-count" class="text-2xl font-bold text-gray-900 dark:text-gray-100 transition-all duration-300">0</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Emails Processados</span>
+                    </div>
+                    <button onclick="resetProcessedCount()" class="ml-2 text-gray-400 hover:text-red-500 transition-colors duration-200" title="Resetar contador">
+                        <i class="fas fa-redo text-xs"></i>
+                    </button>
+                </div>
+                <div class="flex items-center gap-4 bg-gray-50 dark:bg-gray-700 px-6 py-4 rounded-xl border border-gray-200 dark:border-gray-600">
+                    <i class="fas fa-clock text-2xl text-primary"></i>
+                    <div class="flex flex-col">
+                        <span id="processing-time" class="text-2xl font-bold text-gray-900 dark:text-gray-100 transition-all duration-300">~2s</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Tempo de Análise</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col gap-8">
+            <!-- Input Section -->
+            <section class="bg-white dark:bg-gray-800 rounded-2xl p-10 shadow-2xl border border-gray-200 dark:border-gray-700">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-semibold dark:text-white mb-3 drop-shadow-md">
+                        <i class="fas fa-envelope text-accent mr-3"></i>
+                        Análise de Email
+                    </h2>
+                    <p class="dark:text-white/90 text-lg">Envie um email para classificação automática e sugestão de resposta</p>
+                </div>
+
+                <div class="max-w-4xl mx-auto">
+                    <!-- Tabs -->
+                    <div class="flex bg-gray-100 dark:bg-gray-700 rounded-xl p-1 mb-8">
+                        <button class="tab-btn flex-1 px-5 py-4 rounded-lg font-medium text-gray-600 dark:text-gray-400 transition-all duration-300 flex items-center justify-center gap-3 active" data-tab="text">
+                            <i class="fas fa-keyboard"></i>
+                            Texto Direto
+                        </button>
+                        <button class="tab-btn flex-1 px-5 py-4 rounded-lg font-medium text-gray-600 dark:text-gray-400 transition-all duration-300 flex items-center justify-center gap-3" data-tab="file">
+                            <i class="fas fa-file-upload"></i>
+                            Upload de Arquivo
+                        </button>
+                    </div>
+
+                    <!-- Form -->
+                    <form id="classificationForm" enctype="multipart/form-data">
+                        <!-- Text Input Tab -->
+                        <div class="tab-content" id="text-tab">
+                            <div class="mb-8">
+                                <label for="email_text" class="flex items-center gap-3 font-medium text-gray-700 dark:text-gray-300 mb-4 text-lg">
+                                    <i class="fas fa-edit"></i>
+                                    Conteúdo do Email
+                                </label>
+                                <textarea 
+                                    id="email_text" 
+                                    name="email_text" 
+                                    placeholder="Cole aqui o conteúdo do email que deseja analisar...&#10;&#10;Exemplo:&#10;Olá,&#10;&#10;Preciso do status do meu projeto financeiro que está em andamento. É urgente pois o prazo está próximo.&#10;&#10;Aguardo retorno.&#10;Obrigado."
+                                    rows="8"
+                                    class="w-full min-h-[200px] p-5 border-2 border-gray-300 dark:border-gray-600 rounded-xl font-inherit text-base leading-relaxed resize-y transition-all duration-300 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-gray-800 focus:shadow-lg focus:shadow-primary/10"
+                                ></textarea>
+                                <div class="flex justify-between items-center mt-3 text-sm">
+                                    <div id="char-warning" class="hidden text-amber-500 dark:text-amber-400 flex items-center gap-2">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <span>Próximo do limite recomendado</span>
+                                    </div>
+                                    <div id="char-error" class="hidden text-red-500 dark:text-red-400 flex items-center gap-2">
+                                        <i class="fas fa-times-circle"></i>
+                                        <span>Limite de caracteres excedido</span>
+                                    </div>
+                                    <div class="text-gray-500 dark:text-gray-400 ml-auto">
+                                        <span id="char-count" class="font-medium">0</span>/<span class="text-gray-400">5000</span> caracteres
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- File Upload Tab -->
+                        <div class="tab-content hidden" id="file-tab">
+                            <div class="mb-8">
+                                <div id="fileDropZone" class="border-2 border-dashed border-gray-400 dark:border-gray-500 rounded-xl p-16 text-center cursor-pointer transition-all duration-300 bg-gray-50 dark:bg-gray-700 hover:border-primary hover:bg-primary/5">
+                                    <i class="fas fa-cloud-upload-alt text-5xl text-gray-500 dark:text-gray-400 mb-5"></i>
+                                    <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-3">Arraste e solte seu arquivo aqui</h3>
+                                    <p class="text-gray-600 dark:text-gray-400 mb-5">ou clique para selecionar</p>
+                                    <input type="file" id="file" name="file" accept=".txt,.pdf" class="hidden">
+                                    <div class="flex justify-center gap-5">
+                                        <span class="flex items-center gap-2 bg-white dark:bg-gray-800 px-4 py-2 rounded-lg text-gray-600 dark:text-gray-400 text-sm border border-gray-300 dark:border-gray-600">
+                                            <i class="fas fa-file-alt"></i> .txt
+                                        </span>
+                                        <span class="flex items-center gap-2 bg-white dark:bg-gray-800 px-4 py-2 rounded-lg text-gray-600 dark:text-gray-400 text-sm border border-gray-300 dark:border-gray-600">
+                                            <i class="fas fa-file-pdf"></i> .pdf
+                                        </span>
+                                    </div>
+                                </div>
+                                <div id="fileInfo" class="hidden flex items-center gap-4 p-5 bg-primary/10 border border-primary rounded-xl text-primary mt-4">
+                                    <i class="fas fa-file text-2xl"></i>
+                                    <span class="file-name flex-1 font-medium"></span>
+                                    <button type="button" id="removeFile" class="text-red-500 hover:bg-red-500 hover:text-white p-2 rounded-full transition-all duration-200">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="text-center">
+                            <button type="submit" id="submitBtn" class="bg-gradient-to-r from-primary to-blue-800 text-white px-10 py-5 rounded-xl text-lg font-semibold cursor-pointer transition-all duration-300 shadow-lg hover:-translate-y-1 hover:shadow-xl active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none inline-flex items-center gap-4 min-w-[200px] justify-center">
+                                <i class="fas fa-magic"></i>
+                                <span>Classificar Email</span>
+                                <div class="btn-loader hidden animate-spin">
+                                    <i class="fas fa-spinner"></i>
+                                </div>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section id="resultsSection" class="hidden bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-10 shadow-2xl border border-gray-200 dark:border-gray-700">
+                <div class="text-center mb-6 md:mb-8">
+                    <h2 class="text-2xl md:text-3xl font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center justify-center gap-3">
+                        <i class="fas fa-chart-pie text-accent"></i>
+                        Resultado da Análise
+                    </h2>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 md:mb-8">
+                    <!-- Classification Result -->
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-2xl p-6 border border-gray-200 dark:border-gray-600 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg flex flex-col">
+                        <div class="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-300 dark:border-gray-600 flex-shrink-0">
+                            <i class="fas fa-tag text-xl text-primary"></i>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Classificação</h3>
+                        </div>
+                        <div class="flex-1 flex flex-col justify-center items-center text-center min-h-[200px]">
+                            <div id="classificationBadge" class="inline-flex items-center gap-3 px-6 py-4 rounded-xl font-semibold text-lg mb-6 shadow-md transform transition-all duration-300 hover:scale-105">
+                                <!-- Será preenchido dinamicamente -->
+                            </div>
+                            <div class="w-full">
+                                <label class="block font-medium text-gray-700 dark:text-gray-300 mb-3 text-base">Nível de Confiança</label>
+                                <div class="h-3 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden mb-3 shadow-inner">
+                                    <div id="confidenceFill" class="h-full bg-gradient-to-r from-secondary to-green-600 rounded-full transition-all duration-1000 ease-out"></div>
+                                </div>
+                                <span id="confidenceValue" class="font-bold text-gray-700 dark:text-gray-300 text-lg">0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analysis Details -->
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-2xl p-6 border border-gray-200 dark:border-gray-600 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg flex flex-col">
+                        <div class="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-300 dark:border-gray-600 flex-shrink-0">
+                            <i class="fas fa-microscope text-xl text-primary"></i>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Análise Detalhada</h3>
+                        </div>
+                        <div class="flex-1 min-h-[200px] max-h-[400px] overflow-hidden">
+                            <div id="analysisText" class="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-300 dark:border-gray-600 text-sm leading-relaxed text-gray-700 dark:text-gray-300 overflow-y-auto h-full scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
+                                <!-- Será preenchido dinamicamente -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Suggested Response -->
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-2xl p-6 border border-gray-200 dark:border-gray-600 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg flex flex-col">
+                        <div class="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-300 dark:border-gray-600 flex-shrink-0">
+                            <i class="fas fa-reply text-xl text-primary"></i>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Resposta Sugerida</h3>
+                        </div>
+                        <div class="flex-1 flex flex-col min-h-[200px] max-h-[400px]">
+                            <div id="responseText" class="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-300 dark:border-gray-600 text-sm leading-relaxed text-gray-700 dark:text-gray-300 mb-4 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent whitespace-pre-wrap break-words resize-none">
+                                <!-- Será preenchido dinamicamente -->
+                            </div>
+                            <div class="flex gap-3 flex-wrap flex-shrink-0">
+                                <button onclick="copyResponse()" class="flex-1 min-w-[120px] px-4 py-2 border-2 border-primary bg-transparent text-primary rounded-lg text-sm font-medium cursor-pointer transition-all duration-300 flex items-center justify-center gap-2 hover:bg-primary hover:text-white">
+                                    <i class="fas fa-copy"></i>
+                                    <span>Copiar</span>
+                                </button>
+                                <button onclick="editResponse()" class="flex-1 min-w-[120px] px-4 py-2 border-2 border-secondary bg-transparent text-secondary rounded-lg text-sm font-medium cursor-pointer transition-all duration-300 flex items-center justify-center gap-2 hover:bg-secondary hover:text-white">
+                                    <i class="fas fa-edit"></i>
+                                    <span>Editar</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- New Analysis Button -->
+                <div class="text-center">
+                    <button onclick="newAnalysis()" class="bg-transparent text-primary border-2 border-primary px-8 py-4 rounded-xl text-base font-medium cursor-pointer transition-all duration-300 inline-flex items-center gap-3 hover:bg-primary hover:text-white">
+                        <i class="fas fa-plus"></i>
+                        Nova Análise
+                    </button>
+                </div>
+            </section>
+
+            <!-- Error Section -->
+            <section id="errorSection" class="hidden bg-white dark:bg-gray-800 rounded-2xl p-10 shadow-2xl border border-gray-200 dark:border-gray-700 text-center">
+                <div class="max-w-lg mx-auto">
+                    <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-5"></i>
+                    <h3 class="text-2xl font-semibold text-red-500 mb-4">Erro no Processamento</h3>
+                    <p id="errorMessage" class="text-gray-600 dark:text-gray-400 mb-6"></p>
+                    <button onclick="newAnalysis()" class="bg-transparent text-primary border-2 border-primary px-6 py-3 rounded-xl text-base font-medium cursor-pointer transition-all duration-300 inline-flex items-center gap-3 hover:bg-primary hover:text-white">
+                        <i class="fas fa-redo"></i>
+                        Tentar Novamente
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="mt-8 text-center">
+            <div class="text-white/80 text-base mb-4">&copy; 2025 EmailClassifier AI - Desenvolvido para otimização de fluxo de trabalho em emails corporativos</div>
+            <div class="flex justify-center gap-8 flex-wrap text-white/70">
+                <span class="flex items-center gap-2">
+                    <i class="fas fa-shield-alt"></i> Seguro & Privado
+                </span>
+                <span class="flex items-center gap-2">
+                    <i class="fas fa-zap"></i> Processamento Rápido
+                </span>
+                <span class="flex items-center gap-2">
+                    <i class="fas fa-brain"></i> IA Avançada
+                </span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast" class="fixed top-20 right-2 md:right-5 px-4 md:px-6 py-3 md:py-4 rounded-lg shadow-lg z-50 transform translate-x-full opacity-0 transition-all duration-300 ease-in-out max-w-sm">
+        <div class="flex items-center">
+            <i id="toastIcon" class="fas fa-check-circle mr-2 md:mr-3 text-sm md:text-base"></i>
+            <span id="toastMessage" class="text-sm md:text-base font-medium"></span>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
